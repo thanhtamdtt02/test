@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luồng Quy Trình – Hard Collection Masterplan</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #38bdf8;
+
+    --mvp1: #3b82f6; --mvp1-light: #1e3a5f; --mvp1-glow: rgba(59,130,246,0.25);
+    --mvp2: #10b981; --mvp2-light: #064e3b; --mvp2-glow: rgba(16,185,129,0.25);
+    --mvp3: #f59e0b; --mvp3-light: #451a03; --mvp3-glow: rgba(245,158,11,0.25);
+    --mvp4: #8b5cf6; --mvp4-light: #2e1065; --mvp4-glow: rgba(139,92,246,0.25);
+    --mvp5: #ef4444; --mvp5-light: #450a0a; --mvp5-glow: rgba(239,68,68,0.25);
+    --mvp6: #06b6d4; --mvp6-light: #083344; --mvp6-glow: rgba(6,182,212,0.25);
+    --mvp7: #ec4899; --mvp7-light: #500724; --mvp7-glow: rgba(236,72,153,0.25);
+    --mvp8: #84cc16; --mvp8-light: #1a2e05; --mvp8-glow: rgba(132,204,22,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background grid ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(56,189,248,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56,189,248,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── Header ── */
+  header {
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.3);
+    color: var(--accent); padding: 4px 14px; border-radius: 99px;
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  header h1 {
+    font-size: clamp(24px, 4vw, 40px); font-weight: 800; line-height: 1.15;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+  header p { color: var(--muted); font-size: 14px; }
+
+  /* ── MVP Nav tabs ── */
+  .tab-nav {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 36px;
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,14,26,0.92);
+    backdrop-filter: blur(12px);
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    border: 1px solid transparent; cursor: pointer; transition: all 0.2s;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;
+    background: var(--surface); color: var(--muted); border-color: var(--border);
+  }
+  .tab-btn:hover { color: var(--text); border-color: var(--muted); }
+  .tab-btn.active { color: #fff; }
+
+  /* ── MVP Section ── */
+  .mvp-section { display: none; animation: fadeIn 0.35s ease; }
+  .mvp-section.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+  .mvp-header {
+    display: flex; align-items: flex-start; gap: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px 28px; margin-bottom: 32px;
+    position: relative; overflow: hidden;
+  }
+  .mvp-header::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .mvp-badge {
+    display: flex; align-items: center; justify-content: center;
+    width: 52px; height: 52px; border-radius: 12px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .mvp-header-info h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .mvp-header-info p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .mvp-meta { margin-left: auto; text-align: right; flex-shrink: 0; }
+  .mvp-meta .date-range { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .mvp-meta .date-range span { color: var(--text); font-weight: 600; }
+
+  /* ── Flow canvas ── */
+  .flow-canvas {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px 24px; overflow-x: auto;
+  }
+
+  /* ── Swimlane ── */
+  .swimlane-container { min-width: 900px; }
+  .swimlane-header {
+    display: grid; gap: 1px; margin-bottom: 2px;
+  }
+  .lane-label {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0; padding: 8px 12px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); text-align: center;
+  }
+  .swimlanes { display: flex; gap: 1px; }
+  .swim-col {
+    flex: 1; background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 20px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+    min-width: 0;
+  }
+
+  /* ── Flow nodes ── */
+  .node {
+    width: 100%; max-width: 200px;
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; line-height: 1.45; font-weight: 500;
+    border: 1px solid; text-align: center;
+    position: relative; cursor: default;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .node:hover { transform: translateY(-2px); }
+
+  .node-start, .node-end {
+    border-radius: 99px; padding: 8px 20px; font-weight: 700;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .node-process { border-radius: 10px; }
+  .node-decision {
+    border-radius: 4px;
+    transform: rotate(0deg);
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  .node-decision .diamond-inner {
+    width: 140px; height: 70px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; text-align: center;
+    padding: 8px; line-height: 1.3;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  .node-output {
+    border-radius: 10px;
+    border-left-width: 3px !important;
+  }
+  .node-doc {
+    border-radius: 10px 10px 4px 4px;
+    border-bottom: 3px dashed;
+  }
+
+  /* ── Connector arrows ── */
+  .arrow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .arrow-line { width: 2px; flex: 1; min-height: 16px; }
+  .arrow-head { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; }
+  .arrow-label {
+    font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px; border-radius: 99px; margin: 2px 0;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Horizontal connector ── */
+  .h-flow { display: flex; align-items: center; gap: 0; width: 100%; margin: 8px 0; }
+  .h-line { flex: 1; height: 2px; }
+  .h-arrow { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+
+  /* ── Sub-flow list ── */
+  .sub-flows { margin-top: 32px; }
+  .sub-flow-title { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; padding-left: 4px; }
+  .sub-flow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .sub-flow-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .sub-flow-card:hover { border-color: var(--muted); }
+  .sub-flow-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .sub-flow-card ol { padding-left: 20px; }
+  .sub-flow-card li { font-size: 12px; color: #94a3b8; margin-bottom: 6px; line-height: 1.5; }
+  .sub-flow-card li::marker { color: var(--accent); font-weight: 700; }
+
+  /* ── Vertical step flow ── */
+  .step-flow { display: flex; flex-direction: column; align-items: center; gap: 0; width: 100%; }
+
+  /* ── Colors per MVP ── */
+  .c1 { --c: var(--mvp1); --cl: var(--mvp1-light); --cg: var(--mvp1-glow); }
+  .c2 { --c: var(--mvp2); --cl: var(--mvp2-light); --cg: var(--mvp2-glow); }
+  .c3 { --c: var(--mvp3); --cl: var(--mvp3-light); --cg: var(--mvp3-glow); }
+  .c4 { --c: var(--mvp4); --cl: var(--mvp4-light); --cg: var(--mvp4-glow); }
+  .c5 { --c: var(--mvp5); --cl: var(--mvp5-light); --cg: var(--mvp5-glow); }
+  .c6 { --c: var(--mvp6); --cl: var(--mvp6-light); --cg: var(--mvp6-glow); }
+  .c7 { --c: var(--mvp7); --cl: var(--mvp7-light); --cg: var(--mvp7-glow); }
+  .c8 { --c: var(--mvp8); --cl: var(--mvp8-light); --cg: var(--mvp8-glow); }
+
+  .mvp-section .node { background: var(--cl); border-color: var(--c); color: var(--text); box-shadow: 0 0 0 0 var(--cg); }
+  .mvp-section .node:hover { box-shadow: 0 4px 20px var(--cg); }
+  .mvp-section .node-start, .mvp-section .node-end { background: var(--c) !important; border-color: var(--c) !important; color: #fff !important; }
+  .mvp-section .diamond-inner { background: var(--c); color: #fff; }
+  .mvp-section .arrow-line { background: var(--c); }
+  .mvp-section .arrow-head { border-top-color: var(--c); }
+  .mvp-section .h-line { background: var(--c); }
+  .mvp-section .h-arrow { border-left-color: var(--c); }
+  .mvp-section .arrow-label { background: var(--cl); color: var(--c); border: 1px solid var(--c); }
+  .mvp-section .lane-label { border-top: 2px solid var(--c); color: var(--c); }
+  .mvp-section .mvp-header::before { background: var(--c); }
+  .mvp-section .mvp-badge { background: var(--cl); color: var(--c); border: 1px solid var(--c); }
+  .mvp-section .tab-btn.active { background: var(--cl); border-color: var(--c); color: var(--c); }
+  .mvp-section .sub-flow-card h4 { color: var(--c); }
+  .mvp-section .sub-flow-card li::marker { color: var(--c); }
+
+  /* active tab colors */
+  .tab-btn[data-mvp="1"].active { background: var(--mvp1-light); border-color: var(--mvp1); color: var(--mvp1); }
+  .tab-btn[data-mvp="2"].active { background: var(--mvp2-light); border-color: var(--mvp2); color: var(--mvp2); }
+  .tab-btn[data-mvp="3"].active { background: var(--mvp3-light); border-color: var(--mvp3); color: var(--mvp3); }
+  .tab-btn[data-mvp="4"].active { background: var(--mvp4-light); border-color: var(--mvp4); color: var(--mvp4); }
+  .tab-btn[data-mvp="5"].active { background: var(--mvp5-light); border-color: var(--mvp5); color: var(--mvp5); }
+  .tab-btn[data-mvp="6"].active { background: var(--mvp6-light); border-color: var(--mvp6); color: var(--mvp6); }
+  .tab-btn[data-mvp="7"].active { background: var(--mvp7-light); border-color: var(--mvp7); color: var(--mvp7); }
+  .tab-btn[data-mvp="8"].active { background: var(--mvp8-light); border-color: var(--mvp8); color: var(--mvp8); }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .mvp-header { flex-direction: column; }
+    .mvp-meta { margin-left: 0; text-align: left; }
+    .tab-nav { gap: 6px; }
+    .tab-btn { padding: 6px 10px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="header-badge">🏦 Hard Collection System</div>
+    <h1>Luồng Quy Trình Xử Lý Nghiệp Vụ</h1>
+    <p>Hệ thống thu hồi nợ – 8 giai đoạn triển khai (09/2025 – 03/2027)</p>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-mvp="1" onclick="showMVP(1)">MVP1 · Danh mục KH</button>
+    <button class="tab-btn" data-mvp="2" onclick="showMVP(2)">MVP2 · Chuyển giao nợ</button>
+    <button class="tab-btn" data-mvp="3" onclick="showMVP(3)">MVP3 · Phương án XLN</button>
+    <button class="tab-btn" data-mvp="4" onclick="showMVP(4)">MVP4 · Xử lý TSBĐ</button>
+    <button class="tab-btn" data-mvp="5" onclick="showMVP(5)">MVP5 · Tố tụng & Chi phí</button>
+    <button class="tab-btn" data-mvp="6" onclick="showMVP(6)">MVP6 · Dự phòng & Xóa nợ</button>
+    <button class="tab-btn" data-mvp="7" onclick="showMVP(7)">MVP7 · Mua bán nợ</button>
+    <button class="tab-btn" data-mvp="8" onclick="showMVP(8)">MVP8 · Cơ cấu & KPI</button>
+  </nav>
+
+  <!-- ══════════════ MVP 1 ══════════════ -->
+  <section class="mvp-section c1 active" id="mvp1">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP1</div>
+      <div class="mvp-header-info">
+        <h2>Quản lý Danh mục Khách hàng</h2>
+        <p>Cấu phần thiết yếu dùng chung · Quản lý danh mục nợ RB & EB · Thông tin tài sản & tín dụng · Luồng thông báo số dư</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>09/09/2025</span></div>
+        <div class="date-range">Kết thúc: <span>28/01/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <!-- Main flow: 3-column swimlane -->
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">👤 Cán bộ Xử lý nợ (CMB)</div>
+          <div class="lane-label">🖥️ Hệ thống Hard Collection</div>
+          <div class="lane-label">🏦 Core Banking / Nguồn dữ liệu</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+
+          <!-- Lane 1: Cán bộ -->
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">Đăng nhập hệ thống</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Chọn chức năng<br>Quản lý Danh mục</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tìm kiếm / Lọc<br>danh sách KH nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">KH thuộc nhóm nợ nào?</div></div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Xem chi tiết<br>thông tin KH</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ghi nhận / Cập nhật<br>thông tin quản lý KH</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Nhận thông báo<br>số dư tài khoản</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Hoàn thành</div>
+            </div>
+          </div>
+
+          <!-- Lane 2: Hệ thống -->
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:52px;"></div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Hiển thị Dashboard<br>trang chủ danh mục</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Phân loại:<br><strong>RB</strong> (Cá nhân) | <strong>EB</strong> (DN)</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Render:<br>· Thông tin tổng quan<br>· Tài sản bảo đảm<br>· Tín dụng / Phi tín dụng</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Lưu log thay đổi<br>lịch sử tác nghiệp</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Engine thông báo:<br>TK Tiền gửi · TK Thanh toán</div>
+            </div>
+          </div>
+
+          <!-- Lane 3: Core Banking -->
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:160px;"></div>
+              <div class="node node-output">Đồng bộ dữ liệu KH<br>từ Core Banking (T24)</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-output">Trả về:<br>· Dư nợ gốc / lãi<br>· Nhóm nợ hiện tại<br>· TS đảm bảo</div>
+              <div class="arrow"><div class="arrow-line" style="height:24px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-output">Trigger số dư biến động<br>→ Gửi realtime event</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub flows -->
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 Chi tiết các luồng chức năng</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>📋 R1 – Danh mục KH</h4>
+            <ol>
+              <li>Truy cập danh sách KH nợ</li>
+              <li>Lọc theo nhóm nợ / CBTD phụ trách</li>
+              <li>Xem thông tin tổng quan KH</li>
+              <li>Xem chi tiết hợp đồng vay</li>
+              <li>Xem thông tin quản lý KH (history)</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🏠 R2 – Tài sản & Tín dụng</h4>
+            <ol>
+              <li>View trang chủ Dashboard</li>
+              <li>Xem thông tin tài sản bảo đảm</li>
+              <li>Xem thông tin tín dụng (dư nợ)</li>
+              <li>Xem thông tin phi tín dụng</li>
+              <li>Nhận notification số dư TK</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🔔 Luồng Thông báo</h4>
+            <ol>
+              <li>Core Banking gửi event biến động số dư</li>
+              <li>HC Engine nhận & phân loại</li>
+              <li>Gửi thông báo đến CBTD phụ trách</li>
+              <li>CBTD xác nhận đã đọc thông báo</li>
+              <li>Ghi nhận vào lịch sử KH</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 2 ══════════════ -->
+  <section class="mvp-section c2" id="mvp2">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP2</div>
+      <div class="mvp-header-info">
+        <h2>Chuyển giao nợ & Đôn đốc nợ</h2>
+        <p>Luồng chuyển giao nợ hai chiều NHCD ↔ CMB · Đôn đốc thanh toán tự động & thủ công</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>26/01/2026</span></div>
+        <div class="date-range">Kết thúc: <span>30/03/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">🏢 NHCD (Nguồn)</div>
+          <div class="lane-label">🖥️ Hệ thống HC</div>
+          <div class="lane-label">🏦 CMB (Đích)</div>
+          <div class="lane-label">👤 Cán bộ Đôn đốc</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">Lập danh sách<br>KH chuyển giao</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Phê duyệt<br>danh sách CG</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Gửi yêu cầu<br>chuyển giao → HC</div>
+              <div style="height:120px;"></div>
+              <div class="node node-process">Nhận hồ sơ<br>ngược từ CMB</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:80px;"></div>
+              <div class="node node-process">Tiếp nhận yêu cầu CG<br>Kiểm tra điều kiện</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">Hợp lệ?</div></div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tạo hồ sơ chuyển giao<br>Assign CBTD CMB</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ghi nhận lịch sử<br>chuyển giao nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Lên kế hoạch<br>đôn đốc tự động</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:200px;"></div>
+              <div class="node node-output">Tiếp nhận KH<br>chuyển giao</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Xác nhận tiếp quản<br>hồ sơ KH</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">CG ngược lại NHCD?</div></div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:320px;"></div>
+              <div class="node node-process">Thực hiện đôn đốc:<br>· Gọi điện<br>· SMS / Email<br>· Gặp trực tiếp</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ghi nhận kết quả<br>đôn đốc vào hệ thống</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Cập nhật<br>trạng thái nợ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 Chi tiết luồng</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>🔄 Chuyển giao NHCD → CMB</h4>
+            <ol>
+              <li>NHCD lập & phê duyệt danh sách CG</li>
+              <li>HC kiểm tra điều kiện chuyển giao</li>
+              <li>Tạo bàn giao, gán CBTD CMB</li>
+              <li>CMB xác nhận tiếp nhận hồ sơ</li>
+              <li>Hệ thống log toàn bộ lịch sử</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🔄 Chuyển giao CMB → NHCD</h4>
+            <ol>
+              <li>CMB đánh giá KH đủ điều kiện CG ngược</li>
+              <li>Lập hồ sơ yêu cầu trả về NHCD</li>
+              <li>HC xử lý & gửi thông báo NHCD</li>
+              <li>NHCD xác nhận tiếp nhận lại</li>
+              <li>Đóng hồ sơ CG tại CMB</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>📞 Đôn đốc nợ</h4>
+            <ol>
+              <li>HC tự động tạo kế hoạch đôn đốc</li>
+              <li>CBTD thực hiện liên lạc (call/SMS/visit)</li>
+              <li>Ghi nhận kết quả từng lần đôn đốc</li>
+              <li>Đánh giá phản hồi của KH</li>
+              <li>Chuyển sang phương án XLN nếu thất bại</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 3 ══════════════ -->
+  <section class="mvp-section c3" id="mvp3">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP3</div>
+      <div class="mvp-header-info">
+        <h2>Trình – Duyệt Phương án Xử lý Nợ (XLN)</h2>
+        <p>Luồng xét duyệt nội bộ CMB · Luồng trình duyệt không qua thẩm định · Luồng trình duyệt qua thẩm định K.QLRR</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>23/02/2026</span></div>
+        <div class="date-range">Kết thúc: <span>26/05/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">👤 CBTD CMB</div>
+          <div class="lane-label">🏢 Lãnh đạo CMB</div>
+          <div class="lane-label">🖥️ Hệ thống HC</div>
+          <div class="lane-label">🔍 K.QLRR Thẩm định</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">Lập phương án<br>Xử lý nợ (XLN)</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Điền thông tin:<br>· Phương án đề xuất<br>· Số tiền · Thời hạn<br>· Tài sản liên quan</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Đính kèm tài liệu<br>& trình lãnh đạo</div>
+              <div style="height:100px;"></div>
+              <div class="node node-process">Nhận kết quả phê duyệt<br>Thực hiện theo PA</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:140px;"></div>
+              <div class="node node-process">Nhận hồ sơ XLN<br>Xem xét phương án</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">Thẩm quyền CMB?</div></div>
+              <div class="arrow"><div class="arrow-label">Có</div><div class="arrow-line" style="height:16px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Phê duyệt / Từ chối<br>tại CMB</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Đóng luồng CMB</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:60px;"></div>
+              <div class="node node-process">Validate dữ liệu<br>Kiểm tra đầy đủ hồ sơ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Routing workflow<br>theo thẩm quyền</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tracking trạng thái<br>· Chờ duyệt<br>· Đang xem xét<br>· Đã duyệt / Từ chối</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Gửi thông báo<br>kết quả phê duyệt</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:220px;"></div>
+              <div class="node node-decision"><div class="diamond-inner">Cần thẩm định?</div></div>
+              <div class="arrow"><div class="arrow-label">Có</div><div class="arrow-line" style="height:16px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Thẩm định<br>phương án XLN</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Lập báo cáo<br>thẩm định</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Phê duyệt / Yêu cầu<br>bổ sung hồ sơ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 3 Luồng phê duyệt</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>✅ Luồng 1 – Nội bộ CMB</h4>
+            <ol>
+              <li>CBTD lập phương án XLN</li>
+              <li>Trình lãnh đạo CMB xem xét</li>
+              <li>Lãnh đạo phê duyệt/từ chối trực tiếp</li>
+              <li>Hệ thống ghi nhận & thông báo kết quả</li>
+              <li>CBTD triển khai thực hiện PA</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>⚡ Luồng 2 – Không qua thẩm định</h4>
+            <ol>
+              <li>Vượt thẩm quyền CMB → chuyển K.QLRR</li>
+              <li>K.QLRR xem xét trực tiếp</li>
+              <li>Phê duyệt không cần thẩm định riêng</li>
+              <li>Trả kết quả về CMB qua HC</li>
+              <li>CBTD triển khai PA</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🔍 Luồng 3 – Qua thẩm định K.QLRR</h4>
+            <ol>
+              <li>Vượt thẩm quyền → K.QLRR thẩm định</li>
+              <li>Phòng thẩm định lập báo cáo</li>
+              <li>Ban lãnh đạo K.QLRR phê duyệt</li>
+              <li>Gửi quyết định về CMB</li>
+              <li>CBTD nhận & triển khai PA</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 4 ══════════════ -->
+  <section class="mvp-section c4" id="mvp4">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP4</div>
+      <div class="mvp-header-info">
+        <h2>Xử lý Tài sản Bảo đảm (TSBĐ)</h2>
+        <p>Nhận bàn giao · Thu giữ tài sản · Bán đấu giá · MSB tự bán · Nhận tài sản gán nợ</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>31/05/2026</span></div>
+        <div class="date-range">Kết thúc: <span>24/07/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">👤 Cán bộ XLTS</div>
+          <div class="lane-label">🖥️ Hệ thống HC</div>
+          <div class="lane-label">⚖️ Bên thứ ba / Đấu giá</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">Xác định TSBĐ<br>cần xử lý</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">Phương thức XLTS?</div></div>
+              <div class="arrow"><div class="arrow-label">Nhận BG</div><div class="arrow-line" style="height:14px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Lập biên bản<br>nhận bàn giao TS</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ký biên bản<br>bàn giao</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Cập nhật trạng thái<br>TS vào hệ thống</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:60px;"></div>
+              <div class="node node-process">Hiển thị danh sách TSBĐ<br>Trạng thái hiện tại</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ghi nhận phương thức<br>XLTS được chọn</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tạo workflow XLTS<br>Theo dõi tiến độ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tính số tiền thu được<br>Đối trừ vào dư nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Cập nhật dư nợ<br>sau XLTS</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:180px;"></div>
+              <div class="node node-output">Tiếp nhận hồ sơ<br>tài sản đấu giá</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Thẩm định giá TS<br>Tổ chức đấu giá</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Trả kết quả đấu giá<br>Xác nhận người mua</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Chuyển tiền về MSB<br>Thanh lý hợp đồng</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 5 Phương thức xử lý TSBĐ</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>📦 Nhận bàn giao</h4>
+            <ol><li>KH tự nguyện giao TS</li><li>Lập biên bản bàn giao</li><li>Định giá lại TS</li><li>Lưu hồ sơ vào HC</li></ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>⚠️ Thu giữ cưỡng chế</h4>
+            <ol><li>Lập hồ sơ thu giữ</li><li>Phối hợp cơ quan thi hành án</li><li>Thu giữ TS thực tế</li><li>Cập nhật HC</li></ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🔨 Bán đấu giá</h4>
+            <ol><li>Ủy quyền cho tổ chức đấu giá</li><li>Thông báo đấu giá công khai</li><li>Tổ chức phiên đấu giá</li><li>Ký HĐ & thanh toán</li></ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🏷️ MSB tự bán</h4>
+            <ol><li>MSB trực tiếp tìm người mua</li><li>Định giá & đàm phán</li><li>Ký hợp đồng mua bán</li><li>Thu tiền & đối trừ nợ</li></ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🤝 Nhận gán nợ</h4>
+            <ol><li>KH đề nghị dùng TS thanh nợ</li><li>Định giá TS gán nợ</li><li>Ký biên bản gán nợ</li><li>Nhập TS vào danh mục MSB</li></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 5 ══════════════ -->
+  <section class="mvp-section c5" id="mvp5">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP5</div>
+      <div class="mvp-header-info">
+        <h2>Tố tụng, Miễn giảm lãi & Chi phí</h2>
+        <p>Khởi kiện · Thi hành án · Tố cáo · Miễn giảm lãi phạt · Thực địa · Định giá · Thanh toán chi phí nội bộ</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>31/07/2026</span></div>
+        <div class="date-range">Kết thúc: <span>22/09/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 Các luồng nghiệp vụ MVP5</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>⚖️ Tố tụng – Khởi kiện</h4>
+            <ol>
+              <li>CBTD đánh giá đủ điều kiện khởi kiện</li>
+              <li>Lập hồ sơ khởi kiện (HĐTD, TS, biên bản)</li>
+              <li>Trình phê duyệt nội bộ</li>
+              <li>Nộp đơn khởi kiện tại Tòa án</li>
+              <li>Theo dõi tiến độ vụ kiện trên HC</li>
+              <li>Cập nhật phán quyết cuối cùng</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🏛️ Thi hành án</h4>
+            <ol>
+              <li>Nhận bản án có hiệu lực</li>
+              <li>Nộp đơn yêu cầu thi hành án</li>
+              <li>Phối hợp Cơ quan THA kê biên TS</li>
+              <li>Theo dõi quá trình THA</li>
+              <li>Nhận tiền / TS từ THA</li>
+              <li>Đối trừ dư nợ & đóng hồ sơ</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>📢 Tố cáo / Khiếu nại</h4>
+            <ol>
+              <li>Tiếp nhận đơn tố cáo/khiếu nại</li>
+              <li>Phân loại & gán cán bộ xử lý</li>
+              <li>Xác minh nội dung tố cáo</li>
+              <li>Họp giải quyết nội bộ</li>
+              <li>Trả lời bằng văn bản cho người tố cáo</li>
+              <li>Ghi nhận kết quả xử lý</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>💰 Miễn giảm lãi phạt</h4>
+            <ol>
+              <li>CBTD đề xuất miễn/giảm lãi</li>
+              <li>Nhập thông tin đề xuất vào HC</li>
+              <li>Lãnh đạo xem xét & phê duyệt</li>
+              <li>Hệ thống tính toán số tiền miễn giảm</li>
+              <li>Gửi thông báo cho KH</li>
+              <li>Core Banking cập nhật lãi mới</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🗺️ Thực địa</h4>
+            <ol>
+              <li>Lên kế hoạch thực địa KH</li>
+              <li>CBTD đến địa chỉ KH/TS</li>
+              <li>Chụp ảnh, ghi nhận thực tế</li>
+              <li>Nhập biên bản thực địa vào HC</li>
+              <li>Đính kèm hình ảnh & tọa độ</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>💳 Thanh toán chi phí nội bộ</h4>
+            <ol>
+              <li>CBTD tạo yêu cầu thanh toán chi phí</li>
+              <li>Đính kèm hóa đơn chứng từ</li>
+              <li>Lãnh đạo phê duyệt chi phí</li>
+              <li>Gửi sang bộ phận kế toán</li>
+              <li>Thanh toán & đối soát</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 6 ══════════════ -->
+  <section class="mvp-section c6" id="mvp6">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP6</div>
+      <div class="mvp-header-info">
+        <h2>Dự phòng, Xóa nợ & Dịch vụ thuê ngoài</h2>
+        <p>Sử dụng dự phòng rủi ro · Xóa nợ theo quy định · Outsource dịch vụ pháp lý thu hồi nợ</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>30/09/2026</span></div>
+        <div class="date-range">Kết thúc: <span>04/11/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">👤 Cán bộ / Lãnh đạo CMB</div>
+          <div class="lane-label">🖥️ Hệ thống HC</div>
+          <div class="lane-label">🏢 Đơn vị thuê ngoài / HĐQT</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">Xác định KH đủ điều kiện<br>SDdp / Xóa nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">Loại nghiệp vụ?</div></div>
+              <div class="arrow"><div class="arrow-label">SDĐP</div><div class="arrow-line" style="height:14px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Lập tờ trình<br>sử dụng dự phòng</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Trình HĐQT<br>phê duyệt</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:60px;"></div>
+              <div class="node node-process">Kiểm tra điều kiện<br>SDĐP / Xóa nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tạo hồ sơ trình duyệt<br>Theo dõi phê duyệt</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Sau phê duyệt:<br>Thực hiện hạch toán</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Đóng hồ sơ KH<br>Cập nhật báo cáo</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:180px;"></div>
+              <div class="node node-output">HĐQT/TGĐ<br>Phê duyệt SDĐP/Xóa nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Đơn vị outsource<br>Tiếp nhận hồ sơ CG</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Thực hiện thu hồi<br>Báo cáo kết quả định kỳ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 3 Luồng nghiệp vụ</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>🛡️ Sử dụng dự phòng</h4>
+            <ol>
+              <li>Xác định KH đủ điều kiện SDĐP</li>
+              <li>Lập tờ trình với đầy đủ chứng từ</li>
+              <li>Trình phê duyệt HĐQT/TGĐ</li>
+              <li>Hạch toán sử dụng dự phòng</li>
+              <li>Tiếp tục theo dõi ngoại bảng</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>❌ Xóa nợ</h4>
+            <ol>
+              <li>Xác định KH đủ điều kiện xóa nợ</li>
+              <li>Lập hồ sơ xóa nợ theo quy định NHNN</li>
+              <li>Trình phê duyệt nội bộ + cơ quan chức năng</li>
+              <li>Hạch toán xóa nợ chính thức</li>
+              <li>Lưu hồ sơ & theo dõi ngoại bảng</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🤝 Thuê ngoài pháp lý</h4>
+            <ol>
+              <li>Đánh giá KH cần hỗ trợ pháp lý</li>
+              <li>Lựa chọn đơn vị luật thu hồi nợ</li>
+              <li>Ký hợp đồng dịch vụ</li>
+              <li>Bàn giao hồ sơ KH cho đơn vị</li>
+              <li>Theo dõi kết quả & thanh toán phí DV</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 7 ══════════════ -->
+  <section class="mvp-section c7" id="mvp7">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP7</div>
+      <div class="mvp-header-info">
+        <h2>Mua bán nợ</h2>
+        <p>Bán nợ cho VAMC · Mua bán nợ từ/cho tổ chức khác ngoài VAMC</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>01/10/2026</span></div>
+        <div class="date-range">Kết thúc: <span>25/12/2026</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">👤 CMB / CBTD</div>
+          <div class="lane-label">🖥️ Hệ thống HC</div>
+          <div class="lane-label">🏛️ VAMC</div>
+          <div class="lane-label">🏢 Tổ chức khác</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">Lập danh sách nợ<br>đủ điều kiện bán</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-decision"><div class="diamond-inner">Bán cho VAMC hay TCTK?</div></div>
+              <div class="arrow"><div class="arrow-label">VAMC</div><div class="arrow-line" style="height:14px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Chuẩn bị hồ sơ<br>bán nợ cho VAMC</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ký hợp đồng mua<br>bán nợ + nhận TPĐB</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:60px;"></div>
+              <div class="node node-process">Kiểm tra điều kiện<br>bán/mua nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Định giá nợ<br>Tạo hồ sơ giao dịch</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Theo dõi ký kết<br>hợp đồng MBN</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Hạch toán & đóng<br>hồ sơ KH tại CMB</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:180px;"></div>
+              <div class="node node-output">Tiếp nhận & thẩm định<br>hồ sơ nợ bán</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Phát hành TPĐB<br>Trái phiếu đặc biệt</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tiếp quản & thu hồi<br>nợ thay MSB</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:120px;"></div>
+              <div class="node node-output">Đàm phán giá<br>mua bán nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ký hợp đồng MBN<br>Thanh toán tiền mặt</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tiếp quản khoản nợ<br>& tài sản đảm bảo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 2 Luồng mua bán nợ</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>🏛️ Bán nợ cho VAMC</h4>
+            <ol>
+              <li>Xác định khoản nợ đủ tiêu chí VAMC</li>
+              <li>Lập hồ sơ theo quy định TT19</li>
+              <li>VAMC thẩm định & chấp thuận</li>
+              <li>Ký hợp đồng MBN, nhận TPĐB</li>
+              <li>Hạch toán bán nợ, chuyển sang ngoại bảng</li>
+              <li>Phối hợp VAMC thu hồi nợ</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🏢 Mua bán nợ tổ chức khác</h4>
+            <ol>
+              <li>Tìm kiếm / tiếp nhận đề xuất MBN</li>
+              <li>Thẩm định khoản nợ & TSBĐ</li>
+              <li>Đàm phán giá & điều kiện MBN</li>
+              <li>Trình phê duyệt nội bộ MSB</li>
+              <li>Ký hợp đồng, thanh toán, bàn giao HS</li>
+              <li>Hạch toán & đóng hồ sơ</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MVP 8 ══════════════ -->
+  <section class="mvp-section c8" id="mvp8">
+    <div class="mvp-header">
+      <div class="mvp-badge">MVP8</div>
+      <div class="mvp-header-info">
+        <h2>Cơ cấu nợ, KPI & Dashboard</h2>
+        <p>Luồng cơ cấu & tái cấu trúc nợ · Hệ thống KPI/Incentive · Báo cáo nâng cao · Dashboard · Mobile App</p>
+      </div>
+      <div class="mvp-meta">
+        <div class="date-range">Bắt đầu: <span>15/11/2026</span></div>
+        <div class="date-range">Kết thúc: <span>05/03/2027</span></div>
+      </div>
+    </div>
+    <div class="flow-canvas">
+      <div class="swimlane-container">
+        <div class="swimlane-header" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+          <div class="lane-label">👤 CBTD / KH</div>
+          <div class="lane-label">🖥️ Hệ thống HC</div>
+          <div class="lane-label">📊 Lãnh đạo / Báo cáo</div>
+        </div>
+        <div class="swimlanes" style="gap:4px;">
+          <div class="swim-col">
+            <div class="step-flow">
+              <div class="node node-start">KH đề nghị<br>cơ cấu / tái cấu trúc nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">CBTD đánh giá<br>khả năng trả nợ mới</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Đề xuất phương án<br>cơ cấu nợ chi tiết</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Trình phê duyệt<br>phương án cơ cấu</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Ký phụ lục HĐ<br>cơ cấu nợ</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-end">Theo dõi KH<br>thực hiện cam kết</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:60px;"></div>
+              <div class="node node-process">Tính toán phương án<br>cơ cấu (lãi suất/kỳ hạn)</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Mô phỏng lịch trả nợ<br>mới sau cơ cấu</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Workflow phê duyệt<br>Tracking trạng thái</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Cập nhật Core Banking<br>lịch trả nợ mới</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Tính KPI cán bộ<br>Cập nhật Incentive</div>
+            </div>
+          </div>
+          <div class="swim-col">
+            <div class="step-flow">
+              <div style="height:120px;"></div>
+              <div class="node node-output">Dashboard thời gian thực:<br>· Tổng dư nợ · Nhóm nợ<br>· Tỷ lệ thu hồi</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Báo cáo KPI cán bộ<br>Xếp hạng hiệu suất</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">Báo cáo nâng cao<br>· Theo chi nhánh<br>· Theo nhóm nợ<br>· Xu hướng thu hồi</div>
+              <div class="arrow"><div class="arrow-line" style="height:20px;"></div><div class="arrow-head"></div></div>
+              <div class="node node-process">📱 Mobile App<br>Theo dõi danh mục<br>& tác nghiệp từ xa</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sub-flows">
+        <div class="sub-flow-title">📋 Các luồng MVP8</div>
+        <div class="sub-flow-grid">
+          <div class="sub-flow-card">
+            <h4>🔄 Cơ cấu nợ</h4>
+            <ol>
+              <li>KH đề nghị gia hạn/giảm lãi</li>
+              <li>CBTD đánh giá, lập phương án</li>
+              <li>Trình duyệt theo thẩm quyền</li>
+              <li>Ký phụ lục hợp đồng</li>
+              <li>Cập nhật lịch trả nợ mới vào Core</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🏗️ Tái cấu trúc</h4>
+            <ol>
+              <li>Đánh giá toàn diện tình trạng KH</li>
+              <li>Xây dựng kế hoạch tái cơ cấu</li>
+              <li>Trình Ban lãnh đạo cao cấp</li>
+              <li>Ký kết thỏa thuận tái cơ cấu</li>
+              <li>Giám sát thực thi định kỳ</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>🏆 KPI / Incentive</h4>
+            <ol>
+              <li>Định nghĩa chỉ tiêu KPI theo kỳ</li>
+              <li>HC tự động tính điểm KPI CBTD</li>
+              <li>Lãnh đạo xem xét & xác nhận KPI</li>
+              <li>Tính thưởng Incentive dựa trên KPI</li>
+              <li>Xuất báo cáo lương thưởng</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>📊 Dashboard & Báo cáo</h4>
+            <ol>
+              <li>Dashboard real-time tổng quan</li>
+              <li>Biểu đồ xu hướng theo thời gian</li>
+              <li>Drill-down theo chi nhánh/CBTD</li>
+              <li>Xuất báo cáo PDF/Excel</li>
+              <li>Cảnh báo tự động khi vượt ngưỡng</li>
+            </ol>
+          </div>
+          <div class="sub-flow-card">
+            <h4>📱 Mobile App</h4>
+            <ol>
+              <li>Xem danh mục KH được giao</li>
+              <li>Tác nghiệp đôn đốc nợ ngoài hiện trường</li>
+              <li>Chụp ảnh & đính kèm trực tiếp</li>
+              <li>Nhận thông báo push notification</li>
+              <li>Báo cáo nhanh công việc hàng ngày</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+function showMVP(n) {
+  document.querySelectorAll('.mvp-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mvp' + n).classList.add('active');
+  document.querySelector(`[data-mvp="${n}"]`).classList.add('active');
+}
+</script>
+</body>
+</html>
